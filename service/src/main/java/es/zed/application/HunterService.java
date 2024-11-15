@@ -40,9 +40,12 @@ public class HunterService implements HuntInputPort {
   }
 
   @Override
-  public void startHunt(final String name) {
+  public void startHunt(final String name, final HuntRequestBody requestBody) {
     try {
       end = false;
+      Thread actionThread = new Thread(() -> manageAction(requestBody, Thread.currentThread()));
+      actionThread.start();
+
       List<int[]> targetColors = fileManager.asignShinyToFind(name);
       File ringFile = fileManager.getRingFile();
       Rectangle captureRect = screenManager.getCaptureRectangle();
@@ -50,7 +53,8 @@ public class HunterService implements HuntInputPort {
       while (!end) {
         BufferedImage screenshot = robotManager.captureScreenshot(captureRect);
         if (screenManager.processScreenshot(screenshot, targetColors, ringFile)) {
-          stopHunt();
+          actionThread.interrupt();
+          break;
         }
       }
       log.info("Finalized!");
@@ -59,10 +63,9 @@ public class HunterService implements HuntInputPort {
     }
   }
 
-  @Override
-  public void manageAction(final HuntRequestBody requestBody) {
+  private void manageAction(final HuntRequestBody requestBody, final Thread currentThread) {
     int fightCount = 0;
-    while (!end) {
+    while (!currentThread.isInterrupted()) {
       if (screenManager.isSpecificWindowOpen(requestBody.getTitle())) {
         try {
           if (Objects.nonNull(requestBody.getSteps())) {
@@ -91,6 +94,7 @@ public class HunterService implements HuntInputPort {
           }
         } catch (InterruptedException | IOException e) {
           exceptionManager.handleException(e);
+          currentThread.interrupt();
         }
       }
     }

@@ -21,8 +21,7 @@ public class HunterController {
 
   @PostMapping(Constants.POST_HUNT_START_NAME_PATH)
   public RespModel<String> startHunt(@PathVariable String name, @RequestBody HuntRequestBody requestBody) {
-    new Thread(() -> huntInputPort.startHunt(name)).start();
-    new Thread(() -> huntInputPort.manageAction(requestBody)).start();
+    new Thread(() -> huntInputPort.startHunt(name, requestBody)).start();
 
     return RespModel.<String>builder()
         .data(null)
@@ -33,6 +32,7 @@ public class HunterController {
   @PostMapping(Constants.POST_HUNT_STOP_PATH)
   public RespModel<String> stopHunt() {
     huntInputPort.stopHunt();
+
     return RespModel.<String>builder()
         .data(null)
         .message("Hunt stopped!")
