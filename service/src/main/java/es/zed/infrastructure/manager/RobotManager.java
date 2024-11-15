@@ -70,7 +70,8 @@ public class RobotManager {
 
   private void click(int x, int y) {
     robot.mouseMove(x, y);
-    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
   }
 
 }
