@@ -57,6 +57,7 @@ public class HunterService implements HuntInputPort {
       log.info("Finalized!");
     } catch (Exception e) {
       log.error("Error: {}", e.getMessage());
+      Thread.currentThread().interrupt();
     }
   }
 
