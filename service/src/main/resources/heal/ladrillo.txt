@@ -1,0 +1,36 @@
+{
+  "steps": [
+    {
+      "action": "7",
+      "time" : 5000
+    } ,
+    {
+        "action": "Z",
+        "time": 10000
+    } ,
+    {
+        "action": "DOWN",
+        "time": 3400
+    } ,
+    {
+       "action": "1",
+       "time": 500
+    } ,
+    {
+       "action": "RIGHT",
+       "time": 1000
+    } ,
+    {
+       "action": "UP",
+       "time": 750
+    } ,
+    {
+       "action": "RIGHT",
+       "time": 800
+    } ,
+    {
+       "action": "DOWN",
+       "time": 620
+    }
+  ]
+}
