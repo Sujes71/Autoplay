@@ -5,7 +5,6 @@ import es.zed.domain.input.HuntInputPort;
 import es.zed.domain.output.dto.HealActionDto;
 import es.zed.domain.output.request.HuntRequestBody;
 import es.zed.infrastructure.Constants;
-import es.zed.infrastructure.manager.ExceptionManager;
 import es.zed.infrastructure.manager.FileManager;
 import es.zed.infrastructure.manager.RobotManager;
 import es.zed.infrastructure.manager.ScreenManager;
@@ -25,17 +24,15 @@ public class HunterService implements HuntInputPort {
   private final RobotManager robotManager;
   private final ScreenManager screenManager;
   private final FileManager fileManager;
-  private final ExceptionManager exceptionManager;
   private final ObjectMapper objectMapper;
 
   private boolean end;
 
-  public HunterService(RobotManager robotManager, ScreenManager screenManager, FileManager fileManager, ExceptionManager exceptionManager,
+  public HunterService(RobotManager robotManager, ScreenManager screenManager, FileManager fileManager,
       ObjectMapper objectMapper) {
     this.robotManager = robotManager;
     this.screenManager = screenManager;
     this.fileManager = fileManager;
-    this.exceptionManager = exceptionManager;
     this.objectMapper = objectMapper;
   }
 
@@ -93,7 +90,7 @@ public class HunterService implements HuntInputPort {
             fightCount = 0;
           }
         } catch (InterruptedException | IOException e) {
-          exceptionManager.handleException(e);
+          log.error("ERROR: {}", e.getMessage());
           currentThread.interrupt();
         }
       }

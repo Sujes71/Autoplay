@@ -20,7 +20,7 @@ public class HunterController {
   }
 
   @PostMapping(Constants.POST_HUNT_START_NAME_PATH)
-  public RespModel<String> startHunt(@PathVariable String name, @RequestBody HuntRequestBody requestBody) {
+  public RespModel<String> startHunt(@PathVariable final String name, @RequestBody final HuntRequestBody requestBody) {
     new Thread(() -> huntInputPort.startHunt(name, requestBody)).start();
 
     return RespModel.<String>builder()
