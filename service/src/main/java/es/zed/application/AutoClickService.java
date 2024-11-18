@@ -3,9 +3,9 @@ package es.zed.application;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import es.zed.domain.input.AutoClickInputPort;
+import es.zed.domain.input.User32;
 import es.zed.domain.output.request.AutoClickRequestDto;
 import es.zed.infrastructure.Constants;
 import es.zed.infrastructure.manager.RobotManager;
@@ -23,13 +23,13 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class AutoClickService implements AutoClickInputPort {
-
   private final RobotManager robotManager;
   private final ScreenManager screenManager;
 
   private volatile boolean isActive;
   private final AtomicInteger remainingClicks;
   private Point savedCoordinates;
+
   private Point relativeCoordinates;
 
   public AutoClickService(RobotManager robotManager, ScreenManager screenManager) {
@@ -37,8 +37,8 @@ public class AutoClickService implements AutoClickInputPort {
     this.screenManager = screenManager;
     this.isActive = false;
     this.savedCoordinates = null;
-    this.relativeCoordinates = null;
     this.remainingClicks = new AtomicInteger(0);
+    this.relativeCoordinates = null;
   }
 
   @Override
@@ -55,6 +55,8 @@ public class AutoClickService implements AutoClickInputPort {
 
     if (Constants.MOUSE_EVENT.equals(requestDto.getMode())) {
       executeMouseEvents(requestDto);
+    } else if (Constants.SEND_MESSAGE.equals(requestDto.getMode())) {
+      executeSendMessage(requestDto);
     } else {
       log.error("Invalid mode: {}", requestDto.getMode());
     }
@@ -75,6 +77,36 @@ public class AutoClickService implements AutoClickInputPort {
       robotManager.mouseMove(currentMousePosition.x, currentMousePosition.y);
 
       robotManager.sleep(requestDto.getInterval());
+      remainingClicks.decrementAndGet();
+    }
+  }
+
+  private void executeSendMessage(AutoClickRequestDto requestDto) throws InterruptedException {
+    User32 user32 = User32.INSTANCE;
+    WinDef.HWND hwnd = user32.FindWindowA(null, requestDto.getTitle());
+
+    if (hwnd == null) {
+      log.error("Window not found: {}", requestDto.getTitle());
+      return;
+    }
+
+    if (relativeCoordinates == null) {
+      log.error("Coordinates are not set. Press F3 to save coordinates.");
+      return;
+    }
+
+    remainingClicks.set(requestDto.getCount());
+
+    while (remainingClicks.get() > 0 && isActive) {
+      log.info("Sending message to coordinates X={}, Y={} in window {}", relativeCoordinates.x, relativeCoordinates.y, requestDto.getTitle());
+
+      int lParamValue = (relativeCoordinates.y << 16) | (relativeCoordinates.x & 0xFFFF);
+      WinDef.LPARAM lParam = new WinDef.LPARAM(lParamValue);
+
+      user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
+      robotManager.sleep(requestDto.getInterval());
+      user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
+      log.info("Count {}", remainingClicks.get());
       remainingClicks.decrementAndGet();
     }
   }
@@ -110,28 +142,14 @@ public class AutoClickService implements AutoClickInputPort {
   }
 
   private void saveMouseCoordinates() {
-    User32 user32 = User32.INSTANCE;
     Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
     savedCoordinates = new Point(currentMousePosition.x, currentMousePosition.y);
-
-    WinDef.HWND hwnd = user32.GetForegroundWindow();
-    if (hwnd != null) {
-      WinDef.RECT windowRect = new WinDef.RECT();
-      if (user32.GetWindowRect(hwnd, windowRect)) {
-        int relativeX = currentMousePosition.x - windowRect.left;
-        int relativeY = currentMousePosition.y - windowRect.top;
-        relativeCoordinates = new Point(relativeX, relativeY);
-
-        log.info("Coordinates saved: Absolute X={}, Y={} | Relative X={}, Y={}",
-            savedCoordinates.x, savedCoordinates.y, relativeX, relativeY);
-      }
-    } else {
-      log.error("No active window found.");
-    }
+    int[] relativeCoordinatesArray = getWindowCoordinates();
+    relativeCoordinates = new Point(relativeCoordinatesArray[0], relativeCoordinatesArray[1]);
   }
 
   private void activateAutoClick(final AutoClickRequestDto requestDto) throws InterruptedException {
-    if (Objects.isNull(savedCoordinates) || Objects.isNull(relativeCoordinates)) {
+    if (Objects.isNull(savedCoordinates)) {
       log.error("Coordinates are not set. Press F3 to save coordinates.");
       return;
     }
@@ -143,5 +161,37 @@ public class AutoClickService implements AutoClickInputPort {
   private void deactivateAutoClick() {
     isActive = false;
     log.info("AutoClick deactivated!");
+  }
+
+  private int[] getWindowCoordinates() {
+    User32 user32 = User32.INSTANCE;
+    WinDef.HWND foregroundWindow = user32.GetForegroundWindow();
+    if (foregroundWindow == null) {
+      log.error("No foreground window found.");
+      return new int[]{0, 0};
+    }
+
+    User32.RECT windowRect = new User32.RECT();
+    if (!user32.GetWindowRect(foregroundWindow, windowRect)) {
+      log.error("Failed to get window rect.");
+      return new int[]{0, 0};
+    }
+
+    User32.POINT cursorPos = new User32.POINT();
+    if (!user32.GetCursorPos(cursorPos)) {
+      log.error("Failed to get cursor position.");
+      return new int[]{0, 0};
+    }
+
+    int relativeX = cursorPos.x - windowRect.left;
+    int relativeY = cursorPos.y - windowRect.top - 40;
+
+    if (relativeX < 0 || relativeY < 0 || relativeX > (windowRect.right - windowRect.left) || relativeY > (windowRect.bottom - windowRect.top)) {
+      log.error("Cursor is outside the window's bounds.");
+      return new int[]{0, 0};
+    }
+
+    log.info("Relative Coordinates in Foreground Window: X={}, Y={}", relativeX, relativeY);
+    return new int[]{relativeX, relativeY};
   }
 }
