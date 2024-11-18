@@ -29,7 +29,6 @@ public class AutoClickService implements AutoClickInputPort {
   private volatile boolean isActive;
   private final AtomicInteger remainingClicks;
   private Point savedCoordinates;
-
   private Point relativeCoordinates;
 
   public AutoClickService(RobotManager robotManager, ScreenManager screenManager) {
