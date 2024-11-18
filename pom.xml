@@ -9,11 +9,11 @@
 		<relativePath/>
 	</parent>
 	<groupId>es.zed</groupId>
-	<artifactId>pokemmo-auto</artifactId>
+	<artifactId>autoplay</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>pokemmo-auto</name>
-	<description>Application for authomatize pokemmo actions.</description>
+  <name>autoplay</name>
+	<description>Application for automatize actions in games.</description>
 	<url/>
 	<licenses>
 		<license/>

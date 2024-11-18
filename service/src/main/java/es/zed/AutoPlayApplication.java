@@ -4,9 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PokemmoAutoApplication {
+public class AutoPlayApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(PokemmoAutoApplication.class, args);
+    SpringApplication.run(AutoPlayApplication.class, args);
   }
 }
