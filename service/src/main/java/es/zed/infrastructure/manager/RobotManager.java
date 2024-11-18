@@ -46,6 +46,18 @@ public class RobotManager {
     click(350, 550);
   }
 
+  public void mouseMove(int x, int y) {
+    robot.mouseMove(x, y);
+  }
+
+  public void mousePress(int button) {
+    robot.mousePress(button);
+  }
+
+  public void mouseRelease(int button) {
+    robot.mouseRelease(button);
+  }
+
   private void handleKey(String direction, boolean press) {
     int keyCode;
     switch (direction) {

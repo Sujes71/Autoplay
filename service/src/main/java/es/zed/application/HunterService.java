@@ -26,7 +26,7 @@ public class HunterService implements HuntInputPort {
   private final FileManager fileManager;
   private final ObjectMapper objectMapper;
 
-  private boolean end;
+  private volatile boolean end;
 
   public HunterService(RobotManager robotManager, ScreenManager screenManager, FileManager fileManager,
       ObjectMapper objectMapper) {
@@ -37,7 +37,7 @@ public class HunterService implements HuntInputPort {
   }
 
   @Override
-  public void startHunt(final String name, final HuntRequestBody requestBody) {
+  public void start(final String name, final HuntRequestBody requestBody) {
     try {
       end = false;
       Thread actionThread = new Thread(() -> manageAction(requestBody, Thread.currentThread()));
@@ -102,7 +102,7 @@ public class HunterService implements HuntInputPort {
   }
 
   @Override
-  public void stopHunt() {
+  public void stop() {
     end = true;
   }
 }
