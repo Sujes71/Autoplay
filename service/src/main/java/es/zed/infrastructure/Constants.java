@@ -36,7 +36,10 @@ public class Constants {
 
   public static final String FIGHT = "fight";
 
-  public static final List<int[]> FIGHT_COLOR = List.of(new int[]{79, 66, 60});
+  public static final List<int[]> FIGHT_COLOR = List.of(new int[]{79, 66, 60}, new int[]{143, 111, 71},
+      new int[]{133, 102, 65}, new int[] {123, 94, 60}, new int[] {118, 86, 48}, new int[] {107, 73, 42},
+      new int[]{104, 74, 43}, new int[]{78, 69, 57}, new int[]{99, 82, 77}, new int[]{112, 94, 73},
+      new int[]{133, 111, 71});
 
   public static final int THRESHOLD = 2;
 }

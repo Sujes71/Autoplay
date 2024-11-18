@@ -24,7 +24,6 @@ public class RobotManager {
       handleKey(actionTime.getAction(), Boolean.TRUE);
       sleep(actionTime.getTime());
       handleKey(actionTime.getAction(), Boolean.FALSE);
-      sleep(100);
     }
   }
 
