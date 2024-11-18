@@ -50,6 +50,10 @@ public class AutoClickService implements AutoClickInputPort {
   }
 
   private void startClick(final AutoClickRequestDto requestDto) throws InterruptedException {
+    if (!screenManager.isSpecificWindowOpen(requestDto.getTitle())) {
+      log.error("Specified window not found: {}", requestDto.getTitle());
+      return;
+    }
     if (!isActive) return;
     if (Constants.MOUSE_EVENT.equals(requestDto.getMode())) {
       executeMouseEvents(requestDto);
@@ -61,11 +65,6 @@ public class AutoClickService implements AutoClickInputPort {
   }
 
   private void executeMouseEvents(AutoClickRequestDto requestDto) throws InterruptedException {
-    if (!screenManager.isSpecificWindowOpen(requestDto.getTitle())) {
-      log.error("Specified window not found: {}", requestDto.getTitle());
-      return;
-    }
-
     remainingClicks.set(requestDto.getCount());
     while (remainingClicks.get() > 0 && isActive) {
       Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
@@ -96,8 +95,6 @@ public class AutoClickService implements AutoClickInputPort {
     remainingClicks.set(requestDto.getCount());
 
     while (remainingClicks.get() > 0 && isActive) {
-      log.info("Sending message to coordinates X={}, Y={} in window {}", relativeCoordinates.x, relativeCoordinates.y, requestDto.getTitle());
-
       int lParamValue = (relativeCoordinates.y << 16) | (relativeCoordinates.x & 0xFFFF);
       WinDef.LPARAM lParam = new WinDef.LPARAM(lParamValue);
 
