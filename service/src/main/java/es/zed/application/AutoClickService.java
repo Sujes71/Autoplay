@@ -52,7 +52,6 @@ public class AutoClickService implements AutoClickInputPort {
 
   private void startClick(final AutoClickRequestDto requestDto) throws InterruptedException {
     if (!isActive) return;
-
     if (Constants.MOUSE_EVENT.equals(requestDto.getMode())) {
       executeMouseEvents(requestDto);
     } else if (Constants.SEND_MESSAGE.equals(requestDto.getMode())) {
