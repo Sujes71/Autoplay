@@ -76,7 +76,7 @@ public class HunterService implements HuntInputPort {
           Rectangle captureRect = screenManager.getCaptureRectangle();
           BufferedImage screenshot = robotManager.captureScreenshot(captureRect);
 
-          if (screenManager.isFight(screenshot)) {
+          if (screenManager.isImageOnScreen("image/isFight.PNG")) {
             switch (requestBody.getMode()) {
               case Constants.ESCAPE -> robotManager.scape();
               case Constants.FIGHT -> {

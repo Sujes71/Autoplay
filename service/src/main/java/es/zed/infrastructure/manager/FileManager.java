@@ -11,14 +11,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileManager {
 
+  private final ClassLoader classLoader;
+
+  public FileManager () {
+    classLoader = getClass().getClassLoader();
+  }
   public File getRingFile() {
-    ClassLoader classLoader = getClass().getClassLoader();
     return new File(Objects.requireNonNull(classLoader.getResource("ring.mp3")).getFile());
   }
 
   public File getHealFile(String city) {
-    ClassLoader classLoader = getClass().getClassLoader();
     return new File(Objects.requireNonNull(classLoader.getResource("heal/" + city + ".txt")).getFile());
+  }
+
+  public File getImageFile(String path) {
+    return new File(Objects.requireNonNull(classLoader.getResource(path)).getFile());
   }
 
   public List<int[]> asignShinyToFind(String name) throws IOException {
