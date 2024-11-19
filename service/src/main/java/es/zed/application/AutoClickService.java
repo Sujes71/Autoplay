@@ -30,14 +30,17 @@ public class AutoClickService implements AutoClickInputPort {
   private final AtomicInteger remainingClicks;
   private Point savedCoordinates;
   private Point relativeCoordinates;
+  private static boolean isListenerInitialized = false;
 
   public AutoClickService(RobotManager robotManager, ScreenManager screenManager) {
     this.robotManager = robotManager;
     this.screenManager = screenManager;
     this.isActive = false;
     this.savedCoordinates = null;
-    this.remainingClicks = new AtomicInteger(0);
     this.relativeCoordinates = null;
+    this.remainingClicks = new AtomicInteger(0);
+
+    initializeGlobalScreenOnce();
   }
 
   @Override
@@ -106,29 +109,35 @@ public class AutoClickService implements AutoClickInputPort {
     robotManager.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
   }
 
-  private void initializeKeyListener(final AutoClickRequestDto requestDto) {
+  private synchronized void initializeGlobalScreenOnce() {
     try {
-      Logger.getLogger(GlobalScreen.class.getPackage().getName()).setLevel(Level.OFF);
-      GlobalScreen.registerNativeHook();
-
-      GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
-        @Override
-        public void nativeKeyPressed(NativeKeyEvent e) {
-          try {
-            switch (e.getKeyCode()) {
-              case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
-              case NativeKeyEvent.VC_F1 -> activateAutoClick(requestDto);
-              case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
-              default -> log.error("Invalid key: {}", e.getKeyCode());
-            }
-          } catch (InterruptedException ex) {
-            log.error("Error during key press handling: {}", ex.getMessage());
-          }
-        }
-      });
+      if (!isListenerInitialized) {
+        Logger.getLogger(GlobalScreen.class.getPackage().getName()).setLevel(Level.OFF);
+        GlobalScreen.registerNativeHook();
+        isListenerInitialized = true;
+        log.info("GlobalScreen initialized successfully.");
+      }
     } catch (Exception e) {
-      log.error("Failed to initialize key listener: {}", e.getMessage());
+      log.error("Failed to initialize GlobalScreen: {}", e.getMessage());
     }
+  }
+
+  private void initializeKeyListener(final AutoClickRequestDto requestDto) {
+    GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
+      @Override
+      public void nativeKeyPressed(NativeKeyEvent e) {
+        try {
+          switch (e.getKeyCode()) {
+            case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
+            case NativeKeyEvent.VC_F1 -> activateAutoClick(requestDto);
+            case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
+            default -> log.error("Invalid key: {}", e.getKeyCode());
+          }
+        } catch (InterruptedException ex) {
+          log.error("Error during key press handling: {}", ex.getMessage());
+        }
+      }
+    });
   }
 
   private void saveMouseCoordinates() {
