@@ -87,11 +87,6 @@ public class AutoClickService implements AutoClickInputPort {
       return;
     }
 
-    if (relativeCoordinates == null) {
-      log.error("Coordinates are not set. Press F3 to save coordinates.");
-      return;
-    }
-
     remainingClicks.set(requestDto.getCount());
 
     while (remainingClicks.get() > 0 && isActive) {
