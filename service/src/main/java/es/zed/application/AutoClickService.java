@@ -101,7 +101,6 @@ public class AutoClickService implements AutoClickInputPort {
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       robotManager.sleep(requestDto.getInterval());
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
-      log.info("click");
       remainingClicks.decrementAndGet();
     }
   }
