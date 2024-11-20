@@ -30,7 +30,8 @@ public class AutoClickService implements AutoClickInputPort {
   private final AtomicInteger remainingClicks;
   private Point savedCoordinates;
   private Point relativeCoordinates;
-  private static boolean isListenerInitialized = false;
+  private NativeKeyListener currentListener;
+  private static boolean isListenerInitialized;
 
   public AutoClickService(RobotManager robotManager, ScreenManager screenManager) {
     this.robotManager = robotManager;
@@ -38,6 +39,7 @@ public class AutoClickService implements AutoClickInputPort {
     this.isActive = false;
     this.savedCoordinates = null;
     this.relativeCoordinates = null;
+    this.currentListener = null;
     this.remainingClicks = new AtomicInteger(0);
 
     initializeGlobalScreenOnce();
@@ -99,7 +101,7 @@ public class AutoClickService implements AutoClickInputPort {
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       robotManager.sleep(requestDto.getInterval());
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
-
+      log.info("click");
       remainingClicks.decrementAndGet();
     }
   }
@@ -123,7 +125,11 @@ public class AutoClickService implements AutoClickInputPort {
   }
 
   private void initializeKeyListener(final AutoClickRequestDto requestDto) {
-    GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
+    if (currentListener != null) {
+      log.info("Removing existing NativeKeyListener.");
+      GlobalScreen.removeNativeKeyListener(currentListener);
+    }
+    currentListener = new NativeKeyListener() {
       @Override
       public void nativeKeyPressed(NativeKeyEvent e) {
         try {
@@ -137,7 +143,9 @@ public class AutoClickService implements AutoClickInputPort {
           log.error("Error during key press handling: {}", ex.getMessage());
         }
       }
-    });
+    };
+    GlobalScreen.addNativeKeyListener(currentListener);
+    log.info("NativeKeyListener registered successfully.");
   }
 
   private void saveMouseCoordinates() {
