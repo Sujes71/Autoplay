@@ -66,7 +66,7 @@ public class AutoClickService implements AutoClickInputPort {
     }
     if (!isActive) return;
     if (Constants.MOUSE_EVENT.equals(requestDto.getMode())) {
-      executeMouseEvents(requestDto, count, interval);
+      executeMouseEvents(count, interval);
     } else if (Constants.SEND_MESSAGE.equals(requestDto.getMode())) {
       executeSendMessage(requestDto, count, interval);
     } else {
@@ -74,18 +74,17 @@ public class AutoClickService implements AutoClickInputPort {
     }
   }
 
-  private void executeMouseEvents(AutoClickRequestDto requestDto, int count, long interval) throws InterruptedException {
+  private void executeMouseEvents(int count, long interval) throws InterruptedException {
     remainingClicks.set(count);
+    Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
     while (remainingClicks.get() > 0 && isActive) {
-      Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
-
       robotManager.mouseMove(savedCoordinates.x, savedCoordinates.y);
       performMouseClick();
-      robotManager.mouseMove(currentMousePosition.x, currentMousePosition.y);
 
       robotManager.sleep(interval);
       remainingClicks.decrementAndGet();
     }
+    robotManager.mouseMove(currentMousePosition.x, currentMousePosition.y);
   }
 
   private void executeSendMessage(AutoClickRequestDto requestDto, int count, long interval) throws InterruptedException {
@@ -104,8 +103,9 @@ public class AutoClickService implements AutoClickInputPort {
       WinDef.LPARAM lParam = new WinDef.LPARAM(lParamValue);
 
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
-      robotManager.sleep(interval);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
+
+      robotManager.sleep(interval);
       remainingClicks.decrementAndGet();
     }
   }
