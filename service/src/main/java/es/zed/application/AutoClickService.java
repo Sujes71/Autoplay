@@ -4,7 +4,7 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
-import com.github.kwhat.jnativehook.mouse.NativeMouseListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import com.sun.jna.platform.win32.WinDef;
 import es.zed.domain.input.AutoClickInputPort;
 import es.zed.domain.input.User32;
@@ -33,7 +33,7 @@ public class AutoClickService implements AutoClickInputPort {
   private Point savedCoordinates;
   private Point relativeCoordinates;
   private NativeKeyListener currentKeyListener;
-  private NativeMouseListener currentMouseListener;
+  private NativeMouseInputListener currentMouseListener;
   private static boolean isListenerInitialized;
 
   public AutoClickService(RobotManager robotManager, ScreenManager screenManager) {
@@ -157,18 +157,13 @@ public class AutoClickService implements AutoClickInputPort {
       log.info("Removing existing NativeMouseListener.");
       GlobalScreen.removeNativeMouseListener(currentMouseListener);
     }
-    currentMouseListener = new NativeMouseListener() {
+    currentMouseListener = new NativeMouseInputListener() {
       @Override
-      public void nativeMouseClicked(NativeMouseEvent e) {
+      public void nativeMousePressed(NativeMouseEvent e) {
         try {
-          if (requestDto.getMouse().isActivated()) {
-            switch (e.getButton()) {
-              case NativeMouseEvent.BUTTON1 -> {
-                robotManager.sleep(requestDto.getMouse().getDelay());
-                activateAutoClick(requestDto, requestDto.getMouse().getCount(), requestDto.getMouse().getInterval());
-              }
-              default -> log.error("Invalid mouse key: {}", e.getButton());
-            }
+          if (requestDto.getMouse().isActivated() && e.getButton() == NativeMouseEvent.BUTTON1 && isActive) {
+            robotManager.sleep(requestDto.getMouse().getDelay());
+            activateAutoClick(requestDto, requestDto.getMouse().getCount(), requestDto.getMouse().getInterval());
           }
         } catch (InterruptedException ex) {
           log.error("Error during mouse press handling: {}", ex.getMessage());
@@ -176,7 +171,7 @@ public class AutoClickService implements AutoClickInputPort {
       }
     };
     GlobalScreen.addNativeMouseListener(currentMouseListener);
-    log.info("NativeMouseListener registered successfully.");
+    log.info("NativeMouseInputListener registered successfully.");
   }
 
   private void saveMouseCoordinates() {

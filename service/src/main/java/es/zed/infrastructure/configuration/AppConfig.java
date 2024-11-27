@@ -10,6 +10,7 @@ public class AppConfig {
 
   static {
     System.setProperty("java.awt.headless", "false");
+    System.setProperty("jnativehook.dispatcher.usefork", "false");
   }
 
   @Bean
