@@ -45,7 +45,7 @@ public class HunterService implements HuntInputPort {
 
       List<int[]> targetColors = fileManager.asignShinyToFind(name);
       File ringFile = fileManager.getRingFile();
-      Rectangle captureRect = screenManager.getCaptureRectangle(185, 100, 1000, 300);
+      Rectangle captureRect = screenManager.getCaptureRectangle(985, 240, 600, 260);
       while (!end) {
         BufferedImage screenshot = robotManager.captureScreenshot(captureRect);
         if (screenManager.processScreenshot(screenshot, targetColors, ringFile)) {
@@ -79,8 +79,8 @@ public class HunterService implements HuntInputPort {
               case Constants.ESCAPE -> robotManager.scape();
               case Constants.FIGHT -> {
                 robotManager.fight();
-                fightCount++;
                 robotManager.sleep(requestBody.getTime());
+                fightCount++;
               }
               default -> throw new IllegalArgumentException("Invalid mode: " + requestBody.getMode());
             }

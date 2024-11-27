@@ -50,5 +50,5 @@ public class Constants {
 
   public static final List<int[]> FIGHT_COLOR = List.of(new int[] {49, 49, 49});
 
-  public static final int THRESHOLD = 2;
+  public static final int THRESHOLD = 0;
 }
