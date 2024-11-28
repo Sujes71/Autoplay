@@ -8,6 +8,7 @@ import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import com.sun.jna.platform.win32.WinDef;
 import es.zed.domain.input.AutoClickInputPort;
 import es.zed.domain.input.User32;
+import es.zed.domain.output.dto.MoveDto;
 import es.zed.domain.output.request.AutoClickRequestDto;
 import es.zed.infrastructure.Constants;
 import es.zed.infrastructure.manager.RobotManager;
@@ -64,7 +65,6 @@ public class AutoClickService implements AutoClickInputPort {
       log.error("Specified window not found: {}", requestDto.getTitle());
       return;
     }
-    if (!isActive) return;
     if (Constants.MOUSE_EVENT.equals(requestDto.getMode())) {
       executeMouseEvents(count, interval);
     } else if (Constants.SEND_MESSAGE.equals(requestDto.getMode())) {
@@ -139,7 +139,7 @@ public class AutoClickService implements AutoClickInputPort {
         try {
           switch (e.getKeyCode()) {
             case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
-            case NativeKeyEvent.VC_F1 -> activateAutoClick(requestDto, requestDto.getCount(), requestDto.getInterval());
+            case NativeKeyEvent.VC_F1 -> activateAutoClick(requestDto, requestDto.getCount(), requestDto.getInterval(), requestDto.isActivated());
             case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
             default -> log.error("Invalid key: {}", e.getKeyCode());
           }
@@ -157,21 +157,23 @@ public class AutoClickService implements AutoClickInputPort {
       log.info("Removing existing NativeMouseListener.");
       GlobalScreen.removeNativeMouseListener(currentMouseListener);
     }
-    currentMouseListener = new NativeMouseInputListener() {
-      @Override
-      public void nativeMousePressed(NativeMouseEvent e) {
-        try {
-          if (requestDto.getMouse().isActivated() && e.getButton() == NativeMouseEvent.BUTTON1 && isActive) {
-            robotManager.sleep(requestDto.getMouse().getDelay());
-            activateAutoClick(requestDto, requestDto.getMouse().getCount(), requestDto.getMouse().getInterval());
+    if (!requestDto.getMode().equals("mouse_event")) {
+      currentMouseListener = new NativeMouseInputListener() {
+        @Override
+        public void nativeMousePressed(NativeMouseEvent e) {
+          try {
+            if (requestDto.getMouse().isActivated() && e.getButton() == NativeMouseEvent.BUTTON1 && isActive) {
+              robotManager.sleep(requestDto.getMouse().getDelay());
+              activateAutoClick(requestDto, requestDto.getMouse().getCount(), requestDto.getMouse().getInterval(), requestDto.getMouse().isActivated());
+            }
+          } catch (InterruptedException ex) {
+            log.error("Error during mouse press handling: {}", ex.getMessage());
           }
-        } catch (InterruptedException ex) {
-          log.error("Error during mouse press handling: {}", ex.getMessage());
         }
-      }
-    };
-    GlobalScreen.addNativeMouseListener(currentMouseListener);
-    log.info("NativeMouseInputListener registered successfully.");
+      };
+      GlobalScreen.addNativeMouseListener(currentMouseListener);
+      log.info("NativeMouseInputListener registered successfully.");
+    }
   }
 
   private void saveMouseCoordinates() {
@@ -181,19 +183,35 @@ public class AutoClickService implements AutoClickInputPort {
     relativeCoordinates = new Point(relativeCoordinatesArray[0], relativeCoordinatesArray[1]);
   }
 
-  private void activateAutoClick(final AutoClickRequestDto requestDto, final int count, final long interval) throws InterruptedException {
+  private void activateAutoClick(final AutoClickRequestDto requestDto, final int count, final long interval, final boolean isLocallyActivated) throws InterruptedException {
     if (Objects.isNull(savedCoordinates)) {
       log.error("Coordinates are not set. Press F3 to save coordinates.");
       return;
     }
     isActive = true;
     log.info("AutoClick activated!");
-    startClick(requestDto, count, interval);
+    if (isLocallyActivated && isActive) {
+      new Thread(() -> {
+        try {
+          autoMove(requestDto.getMove(), Thread.currentThread());
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }).start();
+      startClick(requestDto, count, interval);
+    }
   }
 
   private void deactivateAutoClick() {
     isActive = false;
     log.info("AutoClick deactivated!");
+  }
+
+  private void autoMove(final MoveDto moveDto, final Thread thread) throws InterruptedException {
+    if (!moveDto.isActive()) return;
+    robotManager.sleep(moveDto.getInterval());
+    performMouseClick();
+    thread.interrupt();
   }
 
   private int[] getWindowCoordinates() {
