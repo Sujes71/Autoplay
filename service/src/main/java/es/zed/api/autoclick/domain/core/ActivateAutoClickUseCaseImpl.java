@@ -47,6 +47,7 @@ public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUti
 		this.currentKeyListener = null;
 		this.currentMouseListener = null;
 		this.remainingClicks = new AtomicInteger(0);
+    initializeGlobalScreenOnce();
 	}
 
 	@Override
