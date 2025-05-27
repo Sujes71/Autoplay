@@ -23,6 +23,7 @@
 	</developers>
   <modules>
     <module>service</module>
+    <module>core</module>
   </modules>
   <scm>
 		<connection/>
