@@ -40,11 +40,10 @@ public class ActivateHuntUseCaseImpl implements ActivateHuntUseCase {
 	public void execute(Hunt input) {
 		try {
 			end = false;
-			String name = "";
 			Thread actionThread = new Thread(() -> manageAction(input, Thread.currentThread()));
 			actionThread.start();
 
-			List<int[]> targetColors = fileUtils.asignShinyToFind(name);
+			List<int[]> targetColors = fileUtils.asignShinyToFind(input.getName());
 			File ringFile = fileUtils.getRingFile();
 			Rectangle captureRect = screenUtils.getCaptureRectangle(985, 240, 600, 260);
 			while (!end) {

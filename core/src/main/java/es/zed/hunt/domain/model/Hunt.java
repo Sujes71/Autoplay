@@ -10,6 +10,8 @@ public class Hunt {
 
   private String title;
 
+  private String name;
+
   private String mode;
 
   private long time;
