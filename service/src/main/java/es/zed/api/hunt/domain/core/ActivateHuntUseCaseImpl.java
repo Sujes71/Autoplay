@@ -21,81 +21,115 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ActivateHuntUseCaseImpl implements ActivateHuntUseCase {
 
-	private final RobotUtils robotUtils;
-	private final ScreenUtils screenUtils;
-	private final FileUtils fileUtils;
-	private final ObjectMapper objectMapper;
+  private final RobotUtils robotUtils;
+  private final ScreenUtils screenUtils;
+  private final FileUtils fileUtils;
+  private final ObjectMapper objectMapper;
 
-	public static volatile boolean end;
+  public static volatile boolean shouldEndHunt;
 
-	public ActivateHuntUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils, FileUtils fileUtils,
-		ObjectMapper objectMapper) {
-		this.robotUtils = robotUtils;
-		this.screenUtils = screenUtils;
-		this.fileUtils = fileUtils;
-		this.objectMapper = objectMapper;
-	}
+  public ActivateHuntUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils, FileUtils fileUtils,
+      ObjectMapper objectMapper) {
+    this.robotUtils = robotUtils;
+    this.screenUtils = screenUtils;
+    this.fileUtils = fileUtils;
+    this.objectMapper = objectMapper;
+  }
 
-	@Override
-	public void execute(Hunt input) {
-		try {
-			end = false;
-			Thread actionThread = new Thread(() -> manageAction(input, Thread.currentThread()));
-			actionThread.start();
+  @Override
+  public void execute(Hunt input) {
+    shouldEndHunt = false;
+    int fightCount = 0;
 
-			List<int[]> targetColors = fileUtils.asignShinyToFind(input.getName());
-			File ringFile = fileUtils.getRingFile();
-			Rectangle captureRect = screenUtils.getCaptureRectangle(985, 240, 600, 260);
-			while (!end) {
-				BufferedImage screenshot = robotUtils.captureScreenshot(captureRect);
-				if (screenUtils.processScreenshot(screenshot, targetColors, ringFile)) {
-					actionThread.interrupt();
-					break;
-				}
-			}
-			if (!actionThread.isInterrupted()) {
-				actionThread.interrupt();
-			}
-			log.info("Finalized!");
-		} catch (Exception e) {
-			log.error("Error: {}", e.getMessage());
-			Thread.currentThread().interrupt();
-		}
-	}
+    log.info("Starting hunt for: {}", input.getName());
 
-	private void manageAction(final Hunt hunt, final Thread currentThread) {
-		int fightCount = 0;
-		while (!currentThread.isInterrupted()) {
-			if (screenUtils.isSpecificWindowOpen(hunt.getTitle())) {
-				try {
-					if (Objects.nonNull(hunt.getSteps())) {
-						robotUtils.executeActions(hunt.getSteps());
-					}
-					Rectangle captureRect = screenUtils.getCaptureRectangle(1000, 400, 400, 100);
-					BufferedImage screenshot = robotUtils.captureScreenshot(captureRect);
+    while (!shouldEndHunt) {
+      if (screenUtils.isSpecificWindowOpen(input.getTitle())) {
+        try {
+          if (Objects.nonNull(input.getSteps())) {
+            robotUtils.executeActions(input.getSteps());
+          }
 
-					if (screenUtils.isFight(screenshot)) {
-						switch (hunt.getMode()) {
-							case Constants.ESCAPE -> robotUtils.scape();
-							case Constants.FIGHT -> {
-								robotUtils.fight();
-								robotUtils.sleep(hunt.getTime());
-								fightCount++;
-							}
-							default -> throw new IllegalArgumentException("Invalid mode: " + hunt.getMode());
-						}
-					}
-					if (Objects.nonNull(hunt.getHeal()) && fightCount == hunt.getHeal().getCount()) {
-						File file = fileUtils.getHealFile(hunt.getHeal().getCity());
-						HealAction healActions = objectMapper.readValue(file, HealAction.class);
-						robotUtils.executeActions(healActions.getSteps());
-						fightCount = 0;
-					}
-				} catch (InterruptedException | IOException e) {
-					log.error("ERROR: {}", e.getMessage());
-					currentThread.interrupt();
-				}
-			}
-		}
-	}
+          if (isBattleEncounterActive()) {
+            checkForShinyTarget(input.getName());
+
+            switch (input.getMode()) {
+              case Constants.ESCAPE -> {
+                log.debug("Escaping from battle encounter");
+                robotUtils.scape();
+              }
+              case Constants.FIGHT -> {
+                log.debug("Engaging in battle encounter");
+                executeFightSequence(input.getTime());
+                fightCount++;
+              }
+              default -> throw new IllegalArgumentException("Invalid battle mode: " + input.getMode());
+            }
+          }
+
+          if (Objects.nonNull(input.getHeal()) && fightCount == input.getHeal().getCount()) {
+            log.info("Fight count threshold reached, performing healing sequence");
+            executeHealingSequence(input.getHeal().getCity());
+            fightCount = 0;
+          }
+
+        } catch (IOException | InterruptedException e) {
+          log.error("Error during hunt execution: {}", e.getMessage());
+          break;
+        }
+      }
+    }
+
+    log.info("Hunt completed successfully for: {}", input.getName());
+  }
+
+  /**
+   * Checks if a battle encounter is currently active on screen
+   * @return true if battle UI is detected, false otherwise
+   */
+  private boolean isBattleEncounterActive() {
+    Rectangle battleDetectionArea = screenUtils.getCaptureRectangle(359, 130, 500, 100);
+    BufferedImage battleScreenshot = robotUtils.captureScreenshot(battleDetectionArea);
+    return screenUtils.isFight(battleScreenshot);
+  }
+
+  /**
+   * Scans the screen for shiny target indicators and terminates hunt if found
+   * @param targetName the name of the target being hunted
+   * @throws IOException if there's an error reading target configuration files
+   */
+  private void checkForShinyTarget(String targetName) throws IOException {
+    List<int[]> targetColors = fileUtils.asignShinyToFind(targetName);
+    File ringIndicatorFile = fileUtils.getRingFile();
+
+    Rectangle shinyDetectionArea = screenUtils.getCaptureRectangle(985, 240, 600, 260);
+    BufferedImage screenshot = robotUtils.captureScreenshot(shinyDetectionArea);
+
+    if (screenUtils.processScreenshot(screenshot, targetColors, ringIndicatorFile)) {
+      log.info("Shiny target found! Terminating hunt for: {}", targetName);
+      shouldEndHunt = true;
+    }
+  }
+
+  /**
+   * Executes the fight sequence including battle actions and post-fight delay
+   * @param sleepDuration time to wait after completing fight actions
+   * @throws InterruptedException if the sleep operation is interrupted
+   */
+  private void executeFightSequence(final Long sleepDuration) throws InterruptedException {
+    robotUtils.fight();
+    robotUtils.sleep(sleepDuration);
+  }
+
+  /**
+   * Executes the healing sequence by loading and performing heal actions
+   * @param cityName the city where healing should be performed
+   * @throws InterruptedException if action execution is interrupted
+   * @throws IOException if there's an error reading the heal configuration file
+   */
+  private void executeHealingSequence(final String cityName) throws InterruptedException, IOException {
+    File healConfigFile = fileUtils.getHealFile(cityName);
+    HealAction healActions = objectMapper.readValue(healConfigFile, HealAction.class);
+    robotUtils.executeActions(healActions.getSteps());
+  }
 }

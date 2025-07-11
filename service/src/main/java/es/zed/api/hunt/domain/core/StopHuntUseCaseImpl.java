@@ -10,6 +10,6 @@ public class StopHuntUseCaseImpl implements StopHuntUseCase {
 
 	@Override
 	public void execute() {
-		ActivateHuntUseCaseImpl.end = true;
+		ActivateHuntUseCaseImpl.shouldEndHunt = true;
 	}
 }

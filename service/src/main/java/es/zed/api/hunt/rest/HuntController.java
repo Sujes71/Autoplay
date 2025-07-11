@@ -26,10 +26,8 @@ public class HuntController {
 
   @PostMapping(HUNT_START_NAME_PATH)
   public void start(@PathVariable final String name, @RequestBody final Hunt hunt) {
-    new Thread(() -> {
-      hunt.setName(name);
-      activateHuntUseCase.execute(hunt);
-    }).start();
+    hunt.setName(name);
+    activateHuntUseCase.execute(hunt);
   }
 
   @PostMapping(HUNT_STOP_PATH)

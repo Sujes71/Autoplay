@@ -32,7 +32,7 @@ public class Constants {
 
   public static final int WM_LBUTTONUP = 0x0202;
 
-  public static final List<int[]> FIGHT_COLOR = List.of(new int[] {49, 49, 49});
+  public static final List<int[]> FIGHT_COLOR = List.of(new int[] {132, 209, 142});
 
   public static final int THRESHOLD = 0;
 }
