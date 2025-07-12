@@ -4,23 +4,20 @@ import com.sun.jna.Native;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef;
 import es.zed.shared.Constants;
-import java.awt.Desktop;
-import java.awt.Rectangle;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class ScreenUtils {
 
-  private final FileUtils fileUtils;
-
-  public ScreenUtils(FileUtils fileUtils) {
-    this.fileUtils = fileUtils;
+  public ScreenUtils() {
   }
 
   public boolean processScreenshot(BufferedImage screenshot, List<int[]> targetColors, File ringFile) throws IOException {

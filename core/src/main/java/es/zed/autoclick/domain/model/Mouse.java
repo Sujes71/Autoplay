@@ -7,11 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Mouse {
 
-  private boolean activated;
-
   private long interval;
 
   private int count;
-
-  private long delay;
 }

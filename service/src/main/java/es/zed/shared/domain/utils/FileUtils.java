@@ -24,10 +24,6 @@ public class FileUtils {
     return new File(Objects.requireNonNull(classLoader.getResource("heal/" + city + ".txt")).getFile());
   }
 
-  public File getImageFile(String path) {
-    return new File(Objects.requireNonNull(classLoader.getResource(path)).getFile());
-  }
-
   public List<int[]> asignShinyToFind(String name) throws IOException {
     List<int[]> rgbList = new ArrayList<>();
     ClassLoader classLoader = getClass().getClassLoader();

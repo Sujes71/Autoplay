@@ -9,9 +9,7 @@ public class AutoClick {
 
 	private String title;
 
-	private boolean activated;
-
-	private String mode;
+	private Mode mode;
 
 	private long interval;
 
@@ -19,5 +17,5 @@ public class AutoClick {
 
 	private Mouse mouse;
 
-	private Move move;
+	private long[] delays;
 }

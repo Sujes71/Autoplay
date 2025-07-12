@@ -2,13 +2,13 @@ package es.zed.shared.domain.utils;
 
 import es.zed.hunt.domain.model.ActionTime;
 import es.zed.shared.Constants;
-import java.awt.Rectangle;
-import java.awt.Robot;
+import org.springframework.stereotype.Component;
+
+import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
 @Component
 public class RobotUtils {
@@ -31,6 +31,10 @@ public class RobotUtils {
     Thread.sleep(sleep);
   }
 
+  public void sleeps(final long[] sleep, int count) throws InterruptedException {
+    Thread.sleep(sleep[count]);
+  }
+
   public BufferedImage captureScreenshot(Rectangle captureRect) {
     return robot.createScreenCapture(captureRect);
   }
@@ -44,18 +48,6 @@ public class RobotUtils {
     click(350, 550);
     click(350, 550);
     click(350, 550);
-  }
-
-  public void mouseMove(int x, int y) {
-    robot.mouseMove(x, y);
-  }
-
-  public void mousePress(int button) {
-    robot.mousePress(button);
-  }
-
-  public void mouseRelease(int button) {
-    robot.mouseRelease(button);
   }
 
   private void handleKey(String direction, boolean press) {

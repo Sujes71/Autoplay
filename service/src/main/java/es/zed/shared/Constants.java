@@ -24,9 +24,11 @@ public class Constants {
 
   public static final String FIGHT = "fight";
 
-  public static final String MOUSE_EVENT = "mouse_event";
+  public static final String MOUSE_MODE = "MOUSE";
 
-  public static final String SEND_MESSAGE = "send_message";
+  public static final String KEY_MODE = "KEY";
+
+  public static final String MIX_MODE = "MIX";
 
   public static final int WM_LBUTTONDOWN = 0x0201;
 
