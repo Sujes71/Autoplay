@@ -13,14 +13,14 @@ import es.zed.autoclick.domain.model.User32;
 import es.zed.shared.Constants;
 import es.zed.shared.domain.utils.RobotUtils;
 import es.zed.shared.domain.utils.ScreenUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.awt.*;
+import java.awt.MouseInfo;
+import java.awt.Point;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -108,26 +108,30 @@ public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUti
 			log.info("Removing existing NativeKeyListener.");
 			GlobalScreen.removeNativeKeyListener(currentKeyListener);
 		}
-		if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX) {
+
 			currentKeyListener = new NativeKeyListener() {
 				@Override
 				public void nativeKeyPressed(NativeKeyEvent e) {
-					try {
-						switch (e.getKeyCode()) {
-							case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
-							case NativeKeyEvent.VC_F1 -> activateAutoClick(autoClick, autoClick.getCount(),
-									autoClick.getInterval());
-							case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
-							default -> log.error("Invalid key: {}", e.getKeyCode());
-						}
-					} catch (InterruptedException ex) {
-						log.error("Error during key press handling: {}", ex.getMessage());
-					}
-				}
+          try {
+            switch (e.getKeyCode()) {
+              case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
+              case NativeKeyEvent.VC_F1 -> {
+                isActive = true;
+                if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX) {
+                  activateAutoClick(autoClick, autoClick.getCount(),
+                      autoClick.getInterval());
+                }
+              }
+              case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
+              default -> log.error("Invalid key: {}", e.getKeyCode());
+            }
+          } catch (InterruptedException ex) {
+            log.error("Error during key press handling: {}", ex.getMessage());
+          }
+        }
 			};
 			GlobalScreen.addNativeKeyListener(currentKeyListener);
 			log.info("NativeKeyListener registered successfully.");
-		}
 	}
 
 	private void initializeMouseListener(final AutoClick autoClick) {
@@ -163,7 +167,6 @@ public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUti
 			log.error("Coordinates are not set. Press F3 to save coordinates.");
 			return;
 		}
-		isActive = true;
 		log.info("AutoClick activated!");
 		if (isActive) {
 			for (int i = 0; i < autoClick.getDelays().length; i++) {

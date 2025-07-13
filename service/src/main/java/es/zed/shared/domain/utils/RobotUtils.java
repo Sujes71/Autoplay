@@ -2,13 +2,13 @@ package es.zed.shared.domain.utils;
 
 import es.zed.hunt.domain.model.ActionTime;
 import es.zed.shared.Constants;
-import org.springframework.stereotype.Component;
-
-import java.awt.*;
+import java.awt.Rectangle;
+import java.awt.Robot;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Component
 public class RobotUtils {
