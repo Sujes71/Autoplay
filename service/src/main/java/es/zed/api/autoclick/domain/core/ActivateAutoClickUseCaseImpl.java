@@ -169,8 +169,11 @@ public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUti
 		}
 		log.info("AutoClick activated!");
 		if (isActive) {
-			for (int i = 0; i < autoClick.getDelays().length; i++) {
-				robotUtils.sleeps(autoClick.getDelays(), i);
+      int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
+			for (int i = 0; i < delaylength; i++) {
+        if (Objects.nonNull(autoClick.getDelays())) {
+          robotUtils.sleeps(autoClick.getDelays(), i);
+        }
 				startClick(autoClick, count, interval);
 			}
 		}
