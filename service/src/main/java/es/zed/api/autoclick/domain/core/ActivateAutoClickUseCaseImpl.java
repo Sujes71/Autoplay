@@ -17,6 +17,9 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
@@ -26,193 +29,241 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
-	private final RobotUtils robotUtils;
-	private final ScreenUtils screenUtils;
+  private final RobotUtils robotUtils;
+  private final ScreenUtils screenUtils;
 
-	private volatile boolean isActive;
-	private final AtomicInteger remainingClicks;
-	private Point savedCoordinates;
-	private Point relativeCoordinates;
-	private NativeKeyListener currentKeyListener;
-	private NativeMouseInputListener currentMouseListener;
-	private static boolean isListenerInitialized;
+  private volatile boolean isActive;
+  private final AtomicInteger remainingClicks;
+  private Point savedCoordinates;
+  private Point relativeCoordinates;
+  private NativeKeyListener currentKeyListener;
+  private NativeMouseInputListener currentMouseListener;
+  private static boolean isListenerInitialized;
 
-public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils) {
-		this.robotUtils = robotUtils;
-		this.screenUtils = screenUtils;
-		this.isActive = false;
-		this.savedCoordinates = null;
-		this.relativeCoordinates = null;
-		this.currentKeyListener = null;
-		this.currentMouseListener = null;
-		this.remainingClicks = new AtomicInteger(0);
+  // Nuevos campos para manejo de hilos
+  private ExecutorService executorService;
+  private Future<?> currentAutoClickTask;
+
+  public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils) {
+    this.robotUtils = robotUtils;
+    this.screenUtils = screenUtils;
+    this.isActive = false;
+    this.savedCoordinates = null;
+    this.relativeCoordinates = null;
+    this.currentKeyListener = null;
+    this.currentMouseListener = null;
+    this.remainingClicks = new AtomicInteger(0);
+    this.executorService = Executors.newSingleThreadExecutor();
+    this.currentAutoClickTask = null;
     initializeGlobalScreenOnce();
-	}
+  }
 
-	@Override
-	public void execute(AutoClick input) {
-		if (input == null) {
-			log.error("input is null");
-			return;
-		}
-		initializeKeyListener(input);
-		initializeMouseListener(input);
-	}
+  @Override
+  public void execute(AutoClick input) {
+    if (input == null) {
+      log.error("input is null");
+      return;
+    }
+    initializeKeyListener(input);
+    initializeMouseListener(input);
+  }
 
-	private void startClick(final AutoClick autoClick, final int count, final long interval) throws InterruptedException {
-		if (!screenUtils.isSpecificWindowOpen(autoClick.getTitle())) {
-			log.error("Specified window not found: {}", autoClick.getTitle());
-			return;
-		}
-		executeSendMessage(autoClick, count, interval);
-	}
+  private void startClick(final AutoClick autoClick, final int count, final long interval) throws InterruptedException {
+    if (!screenUtils.isSpecificWindowOpen(autoClick.getTitle())) {
+      log.error("Specified window not found: {}", autoClick.getTitle());
+      return;
+    }
+    executeSendMessage(autoClick, count, interval);
+  }
 
-	private void executeSendMessage(final AutoClick autoClick, int count, long interval) throws InterruptedException {
-		User32 user32 = User32.INSTANCE;
-		WinDef.HWND hwnd = user32.FindWindowA(null, autoClick.getTitle());
+  private void executeSendMessage(final AutoClick autoClick, int count, long interval) throws InterruptedException {
+    User32 user32 = User32.INSTANCE;
+    WinDef.HWND hwnd = user32.FindWindowA(null, autoClick.getTitle());
 
-		if (hwnd == null) {
-			log.error("Window not found: {}", autoClick.getTitle());
-			return;
-		}
+    if (hwnd == null) {
+      log.error("Window not found: {}", autoClick.getTitle());
+      return;
+    }
 
-		remainingClicks.set(count);
+    remainingClicks.set(count);
 
-		while (remainingClicks.get() > 0 && isActive) {
-			int lParamValue = (relativeCoordinates.y << 16) | (relativeCoordinates.x & 0xFFFF);
-			WinDef.LPARAM lParam = new WinDef.LPARAM(lParamValue);
+    while (remainingClicks.get() > 0 && isActive || autoClick.getMode() == Mode.AUTO && isActive) {
+      if (!isActive) {
+        break;
+      }
 
-			user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
-			user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
+      int lParamValue = (relativeCoordinates.y << 16) | (relativeCoordinates.x & 0xFFFF);
+      WinDef.LPARAM lParam = new WinDef.LPARAM(lParamValue);
 
-			robotUtils.sleep(interval);
-			remainingClicks.decrementAndGet();
-		}
-	}
+      user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
+      user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
 
-	private synchronized void initializeGlobalScreenOnce() {
-		try {
-			if (!isListenerInitialized) {
-				Logger.getLogger(GlobalScreen.class.getPackage().getName()).setLevel(Level.OFF);
-				GlobalScreen.registerNativeHook();
-				isListenerInitialized = true;
-				log.info("GlobalScreen initialized successfully.");
-			}
-		} catch (Exception e) {
-			log.error("Failed to initialize GlobalScreen: {}", e.getMessage());
-		}
-	}
+      long sleepTime = interval;
+      while (sleepTime > 0 && isActive) {
+        long currentSleep = Math.min(sleepTime, 100);
+        robotUtils.sleep(currentSleep);
+        sleepTime -= currentSleep;
+      }
 
-	private void initializeKeyListener(final AutoClick autoClick) {
-		if (currentKeyListener != null) {
-			log.info("Removing existing NativeKeyListener.");
-			GlobalScreen.removeNativeKeyListener(currentKeyListener);
-		}
+      remainingClicks.decrementAndGet();
+    }
+  }
 
-			currentKeyListener = new NativeKeyListener() {
-				@Override
-				public void nativeKeyPressed(NativeKeyEvent e) {
-          try {
-            switch (e.getKeyCode()) {
-              case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
-              case NativeKeyEvent.VC_F1 -> {
-                isActive = true;
-                if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX) {
-                  activateAutoClick(autoClick, autoClick.getCount(),
-                      autoClick.getInterval());
-                }
+  private synchronized void initializeGlobalScreenOnce() {
+    try {
+      if (!isListenerInitialized) {
+        Logger.getLogger(GlobalScreen.class.getPackage().getName()).setLevel(Level.OFF);
+        GlobalScreen.registerNativeHook();
+        isListenerInitialized = true;
+        log.info("GlobalScreen initialized successfully.");
+      }
+    } catch (Exception e) {
+      log.error("Failed to initialize GlobalScreen: {}", e.getMessage());
+    }
+  }
+
+  private void initializeKeyListener(final AutoClick autoClick) {
+    if (currentKeyListener != null) {
+      log.info("Removing existing NativeKeyListener.");
+      GlobalScreen.removeNativeKeyListener(currentKeyListener);
+    }
+
+    currentKeyListener = new NativeKeyListener() {
+      @Override
+      public void nativeKeyPressed(NativeKeyEvent e) {
+        try {
+          switch (e.getKeyCode()) {
+            case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
+            case NativeKeyEvent.VC_F1 -> {
+              isActive = true;
+              if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX || autoClick.getMode() == Mode.AUTO) {
+                activateAutoClick(autoClick, autoClick.getCount(), autoClick.getInterval());
               }
-              case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
-              default -> log.error("Invalid key: {}", e.getKeyCode());
             }
+            case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
+            default -> log.error("Invalid key: {}", e.getKeyCode());
+          }
+        } catch (InterruptedException ex) {
+          log.error("Error during key press handling: {}", ex.getMessage());
+        }
+      }
+    };
+    GlobalScreen.addNativeKeyListener(currentKeyListener);
+    log.info("NativeKeyListener registered successfully.");
+  }
+
+  private void initializeMouseListener(final AutoClick autoClick) {
+    if (currentMouseListener != null) {
+      log.info("Removing existing NativeMouseListener.");
+      GlobalScreen.removeNativeMouseListener(currentMouseListener);
+    }
+    if (autoClick.getMode() == Mode.MOUSE || autoClick.getMode() == Mode.MIX) {
+      currentMouseListener = new NativeMouseInputListener() {
+        @Override
+        public void nativeMousePressed(NativeMouseEvent e) {
+          try {
+            activateAutoClick(autoClick, autoClick.getMouse().getCount(), autoClick.getMouse().getInterval());
           } catch (InterruptedException ex) {
-            log.error("Error during key press handling: {}", ex.getMessage());
+            log.error("Error during mouse press handling: {}", ex.getMessage());
           }
         }
-			};
-			GlobalScreen.addNativeKeyListener(currentKeyListener);
-			log.info("NativeKeyListener registered successfully.");
-	}
+      };
+      GlobalScreen.addNativeMouseListener(currentMouseListener);
+      log.info("NativeMouseInputListener registered successfully.");
+    }
+  }
 
-	private void initializeMouseListener(final AutoClick autoClick) {
-		if (currentMouseListener != null) {
-			log.info("Removing existing NativeMouseListener.");
-			GlobalScreen.removeNativeMouseListener(currentMouseListener);
-		}
-		if (autoClick.getMode() == Mode.MOUSE || autoClick.getMode() == Mode.MIX) {
-			currentMouseListener = new NativeMouseInputListener() {
-				@Override
-				public void nativeMousePressed(NativeMouseEvent e) {
-					try {
-						activateAutoClick(autoClick, autoClick.getMouse().getCount(), autoClick.getMouse().getInterval());
-					} catch (InterruptedException ex) {
-						log.error("Error during mouse press handling: {}", ex.getMessage());
-					}
-				}
-			};
-			GlobalScreen.addNativeMouseListener(currentMouseListener);
-			log.info("NativeMouseInputListener registered successfully.");
-		}
-	}
+  private void saveMouseCoordinates() {
+    Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
+    savedCoordinates = new Point(currentMousePosition.x, currentMousePosition.y);
+    int[] relativeCoordinatesArray = getWindowCoordinates();
+    relativeCoordinates = new Point(relativeCoordinatesArray[0], relativeCoordinatesArray[1]);
+  }
 
-	private void saveMouseCoordinates() {
-		Point currentMousePosition = MouseInfo.getPointerInfo().getLocation();
-		savedCoordinates = new Point(currentMousePosition.x, currentMousePosition.y);
-		int[] relativeCoordinatesArray = getWindowCoordinates();
-		relativeCoordinates = new Point(relativeCoordinatesArray[0], relativeCoordinatesArray[1]);
-	}
+  private void activateAutoClick(final AutoClick autoClick, final int count, final long interval) throws InterruptedException {
+    if (Objects.isNull(savedCoordinates)) {
+      log.error("Coordinates are not set. Press F3 to save coordinates.");
+      return;
+    }
+    log.info("AutoClick activated!");
 
-	private void activateAutoClick(final AutoClick autoClick, final int count, final long interval) throws InterruptedException {
-		if (Objects.isNull(savedCoordinates)) {
-			log.error("Coordinates are not set. Press F3 to save coordinates.");
-			return;
-		}
-		log.info("AutoClick activated!");
-		if (isActive) {
-      int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
-			for (int i = 0; i < delaylength; i++) {
-        if (Objects.nonNull(autoClick.getDelays())) {
-          robotUtils.sleeps(autoClick.getDelays(), i);
+    if (autoClick.getMode() == Mode.AUTO) {
+      if (currentAutoClickTask != null && !currentAutoClickTask.isDone()) {
+        currentAutoClickTask.cancel(true);
+      }
+
+      currentAutoClickTask = executorService.submit(() -> {
+        try {
+          if (isActive) {
+            int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
+            for (int i = 0; i < delaylength && isActive; i++) {
+              if (Objects.nonNull(autoClick.getDelays())) {
+                robotUtils.sleeps(autoClick.getDelays(), i);
+              }
+              startClick(autoClick, count, interval);
+            }
+          }
+        } catch (InterruptedException e) {
+          log.info("AutoClick task was interrupted");
+          Thread.currentThread().interrupt();
+        } catch (Exception e) {
+          log.error("Error in AutoClick task: {}", e.getMessage());
         }
-				startClick(autoClick, count, interval);
-			}
-		}
-	}
+      });
+    } else {
 
-	private void deactivateAutoClick() {
-		isActive = false;
-		log.info("AutoClick deactivated!");
-	}
+      if (isActive) {
+        int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
+        for (int i = 0; i < delaylength; i++) {
+          if (Objects.nonNull(autoClick.getDelays())) {
+            robotUtils.sleeps(autoClick.getDelays(), i);
+          }
+          startClick(autoClick, count, interval);
+        }
+      }
+    }
+  }
 
-	private int[] getWindowCoordinates() {
-		User32 user32 = User32.INSTANCE;
-		WinDef.HWND foregroundWindow = user32.GetForegroundWindow();
-		if (foregroundWindow == null) {
-			log.error("No foreground window found.");
-			return new int[]{0, 0};
-		}
+  private void deactivateAutoClick() {
+    isActive = false;
 
-		User32.RECT windowRect = new User32.RECT();
-		if (!user32.GetWindowRect(foregroundWindow, windowRect)) {
-			log.error("Failed to get window rect.");
-			return new int[]{0, 0};
-		}
+    if (currentAutoClickTask != null && !currentAutoClickTask.isDone()) {
+      currentAutoClickTask.cancel(true);
+      log.info("AutoClick task cancelled");
+    }
 
-		User32.POINT cursorPos = new User32.POINT();
-		if (!user32.GetCursorPos(cursorPos)) {
-			log.error("Failed to get cursor position.");
-			return new int[]{0, 0};
-		}
+    log.info("AutoClick deactivated!");
+  }
 
-		int relativeX = cursorPos.x - windowRect.left;
-		int relativeY = cursorPos.y - windowRect.top - 40;
+  private int[] getWindowCoordinates() {
+    User32 user32 = User32.INSTANCE;
+    WinDef.HWND foregroundWindow = user32.GetForegroundWindow();
+    if (foregroundWindow == null) {
+      log.error("No foreground window found.");
+      return new int[]{0, 0};
+    }
 
-		if (relativeX < 0 || relativeY < 0 || relativeX > (windowRect.right - windowRect.left) || relativeY > (windowRect.bottom - windowRect.top)) {
-			log.error("Cursor is outside the window's bounds.");
-			return new int[]{0, 0};
-		}
+    User32.RECT windowRect = new User32.RECT();
+    if (!user32.GetWindowRect(foregroundWindow, windowRect)) {
+      log.error("Failed to get window rect.");
+      return new int[]{0, 0};
+    }
 
-		log.info("Relative Coordinates in Foreground Window: X={}, Y={}", relativeX, relativeY);
-		return new int[]{relativeX, relativeY};
-	}
+    User32.POINT cursorPos = new User32.POINT();
+    if (!user32.GetCursorPos(cursorPos)) {
+      log.error("Failed to get cursor position.");
+      return new int[]{0, 0};
+    }
+
+    int relativeX = cursorPos.x - windowRect.left;
+    int relativeY = cursorPos.y - windowRect.top - 40;
+
+    if (relativeX < 0 || relativeY < 0 || relativeX > (windowRect.right - windowRect.left) || relativeY > (windowRect.bottom - windowRect.top)) {
+      log.error("Cursor is outside the window's bounds.");
+      return new int[]{0, 0};
+    }
+
+    log.info("Relative Coordinates in Foreground Window: X={}, Y={}", relativeX, relativeY);
+    return new int[]{relativeX, relativeY};
+  }
 }

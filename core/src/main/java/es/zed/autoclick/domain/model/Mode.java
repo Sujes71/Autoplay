@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum Mode {
-    KEY, MOUSE, MIX;
+    KEY, MOUSE, MIX, AUTO;
 
     @JsonCreator
     public static Mode fromString(String value) {
