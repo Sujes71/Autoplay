@@ -40,7 +40,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
   private NativeMouseInputListener currentMouseListener;
   private static boolean isListenerInitialized;
 
-  // Nuevos campos para manejo de hilos
+  // Campos para manejo de hilos
   private ExecutorService executorService;
   private Future<?> currentAutoClickTask;
 
@@ -98,6 +98,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
 
+      // SIMPLIFICADO: Solo usar el interval directo
       robotUtils.sleep(interval);
 
       remainingClicks.decrementAndGet();
@@ -190,13 +191,10 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       currentAutoClickTask = executorService.submit(() -> {
         try {
           if (isActive) {
-            int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
-            for (int i = 0; i < delaylength && isActive; i++) {
-              if (Objects.nonNull(autoClick.getDelays())) {
-                robotUtils.sleeps(autoClick.getDelays(), i);
-              }
-              startClick(autoClick, count, interval);
+            if (autoClick.getDelay() > 0) {
+              robotUtils.sleep(autoClick.getDelay());
             }
+            startClick(autoClick, count, interval);
           }
         } catch (InterruptedException e) {
           log.info("AutoClick task was interrupted");
@@ -206,15 +204,11 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
         }
       });
     } else {
-
       if (isActive) {
-        int delaylength = Objects.nonNull(autoClick.getDelays()) ? autoClick.getDelays().length : 1;
-        for (int i = 0; i < delaylength; i++) {
-          if (Objects.nonNull(autoClick.getDelays())) {
-            robotUtils.sleeps(autoClick.getDelays(), i);
-          }
-          startClick(autoClick, count, interval);
+        if (autoClick.getDelay() > 0) {
+          robotUtils.sleep(autoClick.getDelay());
         }
+        startClick(autoClick, count, interval);
       }
     }
   }

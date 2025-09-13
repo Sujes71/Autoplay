@@ -17,5 +17,5 @@ public class AutoClick {
 
 	private Mouse mouse;
 
-	private long[] delays;
+	private int delay;
 }
