@@ -40,7 +40,6 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
   private NativeMouseInputListener currentMouseListener;
   private static boolean isListenerInitialized;
 
-  // Campos para manejo de hilos
   private ExecutorService executorService;
   private Future<?> currentAutoClickTask;
 
@@ -97,8 +96,6 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
-
-      // SIMPLIFICADO: Solo usar el interval directo
       robotUtils.sleep(interval);
 
       remainingClicks.decrementAndGet();
