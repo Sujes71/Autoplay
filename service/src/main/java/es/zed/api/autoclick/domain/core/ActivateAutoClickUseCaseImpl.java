@@ -98,12 +98,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
 
-      long sleepTime = interval;
-      while (sleepTime > 0 && isActive) {
-        long currentSleep = Math.min(sleepTime, 100);
-        robotUtils.sleep(currentSleep);
-        sleepTime -= currentSleep;
-      }
+      robotUtils.sleep(interval);
 
       remainingClicks.decrementAndGet();
     }
