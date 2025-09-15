@@ -18,4 +18,6 @@ public class AutoClick {
 	private Mouse mouse;
 
 	private int delay;
+
+  private SpeedMode SpeedMode;
 }

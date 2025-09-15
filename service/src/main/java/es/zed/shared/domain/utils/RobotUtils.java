@@ -8,6 +8,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,17 +23,21 @@ public class RobotUtils {
   public void executeActions(final List<ActionTime> actionTimes) throws InterruptedException {
     for (ActionTime actionTime : actionTimes) {
       handleKey(actionTime.getAction(), Boolean.TRUE);
-      sleep(actionTime.getTime());
+      sleepMilis(actionTime.getTime());
       handleKey(actionTime.getAction(), Boolean.FALSE);
     }
   }
 
-  public void sleep(final long sleep) throws InterruptedException {
+  public void sleepMilis(final long sleep) throws InterruptedException {
     Thread.sleep(sleep);
   }
 
-  public void sleeps(final long[] sleep, int count) throws InterruptedException {
-    Thread.sleep(sleep[count]);
+  public void sleepMicros(long micros) throws InterruptedException {
+    TimeUnit.MICROSECONDS.sleep(micros);
+  }
+
+  public void sleepNanos(long nanos) throws InterruptedException {
+    TimeUnit.NANOSECONDS.sleep(nanos);
   }
 
   public BufferedImage captureScreenshot(Rectangle captureRect) {

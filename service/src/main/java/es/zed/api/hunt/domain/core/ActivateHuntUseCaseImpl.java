@@ -118,7 +118,7 @@ public class ActivateHuntUseCaseImpl implements ActivateHuntUseCase {
    */
   private void executeFightSequence(final Long sleepDuration) throws InterruptedException {
     robotUtils.fight();
-    robotUtils.sleep(sleepDuration);
+    robotUtils.sleepMilis(sleepDuration);
   }
 
   /**

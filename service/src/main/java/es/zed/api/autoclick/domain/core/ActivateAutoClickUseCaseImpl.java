@@ -9,17 +9,19 @@ import com.sun.jna.platform.win32.WinDef;
 import es.zed.api.autoclick.domain.port.inbound.ActivateAutoClickUseCase;
 import es.zed.autoclick.domain.model.AutoClick;
 import es.zed.autoclick.domain.model.Mode;
+import es.zed.autoclick.domain.model.SpeedMode;
 import es.zed.autoclick.domain.model.User32;
 import es.zed.shared.Constants;
+import es.zed.shared.domain.utils.PreciseTimingUtils;
 import es.zed.shared.domain.utils.RobotUtils;
 import es.zed.shared.domain.utils.ScreenUtils;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
   private final RobotUtils robotUtils;
   private final ScreenUtils screenUtils;
+  private final PreciseTimingUtils preciseTimingUtils;
 
   private volatile boolean isActive;
   private final AtomicInteger remainingClicks;
@@ -43,9 +46,10 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
   private ExecutorService executorService;
   private Future<?> currentAutoClickTask;
 
-  public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils) {
+  public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils, PreciseTimingUtils preciseTimingUtils) {
     this.robotUtils = robotUtils;
     this.screenUtils = screenUtils;
+    this.preciseTimingUtils = preciseTimingUtils;
     this.isActive = false;
     this.savedCoordinates = null;
     this.relativeCoordinates = null;
@@ -96,7 +100,14 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
-      robotUtils.sleep(interval);
+
+      if (autoClick.getSpeedMode() == SpeedMode.MILLISECOND) {
+        preciseTimingUtils.preciseSleepMilis(interval);
+      } else if (autoClick.getSpeedMode() == SpeedMode.MICROSECOND) {
+        preciseTimingUtils.preciseSleepMicros(interval);
+      } else if (autoClick.getSpeedMode() == SpeedMode.NANOSECOND) {
+        preciseTimingUtils.preciseSleep(interval);
+      }
 
       remainingClicks.decrementAndGet();
     }
@@ -189,7 +200,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
         try {
           if (isActive) {
             if (autoClick.getDelay() > 0) {
-              robotUtils.sleep(autoClick.getDelay());
+              robotUtils.sleepMilis(autoClick.getDelay());
             }
             startClick(autoClick, count, interval);
           }
@@ -203,7 +214,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
     } else {
       if (isActive) {
         if (autoClick.getDelay() > 0) {
-          robotUtils.sleep(autoClick.getDelay());
+          robotUtils.sleepMilis(autoClick.getDelay());
         }
         startClick(autoClick, count, interval);
       }
