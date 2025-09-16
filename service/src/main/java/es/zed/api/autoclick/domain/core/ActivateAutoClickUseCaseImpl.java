@@ -204,8 +204,13 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
               int delay = entry.getKey();
               int newCount = entry.getValue() != null ? entry.getValue() : count;
 
-              startClick(autoClick, newCount, interval);
-              robotUtils.sleepMilis(delay);
+              if (delay > 0) {
+                robotUtils.sleepMilis(delay);
+              }
+
+              if (isActive) {
+                startClick(autoClick, newCount, interval);
+              }
             }
           }
         } catch (InterruptedException e) {
@@ -221,8 +226,13 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
           int delay = entry.getKey();
           int newCount = entry.getValue() != null ? entry.getValue() : count;
 
-          startClick(autoClick, newCount, interval);
-          robotUtils.sleepMilis(delay);
+          if (delay > 0) {
+            robotUtils.sleepMilis(delay);
+          }
+
+          if (isActive) {
+            startClick(autoClick, newCount, interval);
+          }
         }
       }
     }
