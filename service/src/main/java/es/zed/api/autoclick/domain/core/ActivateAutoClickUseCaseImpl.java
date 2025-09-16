@@ -101,11 +101,11 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONDOWN, new WinDef.WPARAM(0), lParam);
       user32.SendMessageA(hwnd, Constants.WM_LBUTTONUP, new WinDef.WPARAM(0), lParam);
 
-      if (autoClick.getSpeedMode() == SpeedMode.MILLISECOND) {
+      if (autoClick.getSpeedMode() == SpeedMode.MS) {
         preciseTimingUtils.preciseSleepMilis(interval);
-      } else if (autoClick.getSpeedMode() == SpeedMode.MICROSECOND) {
+      } else if (autoClick.getSpeedMode() == SpeedMode.MC) {
         preciseTimingUtils.preciseSleepMicros(interval);
-      } else if (autoClick.getSpeedMode() == SpeedMode.NANOSECOND) {
+      } else if (autoClick.getSpeedMode() == SpeedMode.NN) {
         preciseTimingUtils.preciseSleep(interval);
       }
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum SpeedMode {
-    MILLISECOND, MICROSECOND, NANOSECOND;
+    MS, MC, NN;
 
     @JsonCreator
     public static SpeedMode fromString(String value) {
