@@ -17,6 +17,7 @@ import es.zed.shared.domain.utils.RobotUtils;
 import es.zed.shared.domain.utils.ScreenUtils;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -199,10 +200,13 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       currentAutoClickTask = executorService.submit(() -> {
         try {
           if (isActive) {
-            if (autoClick.getDelay() > 0) {
-              robotUtils.sleepMilis(autoClick.getDelay());
+            for (Map.Entry<Integer, Integer> entry : autoClick.getDelays().entrySet()) {
+              int delay = entry.getKey();
+              int newCount = entry.getValue() != null ? entry.getValue() : count;
+
+              startClick(autoClick, newCount, interval);
+              robotUtils.sleepMilis(delay);
             }
-            startClick(autoClick, count, interval);
           }
         } catch (InterruptedException e) {
           log.info("AutoClick task was interrupted");
@@ -213,10 +217,13 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       });
     } else {
       if (isActive) {
-        if (autoClick.getDelay() > 0) {
-          robotUtils.sleepMilis(autoClick.getDelay());
+        for (Map.Entry<Integer, Integer> entry : autoClick.getDelays().entrySet()) {
+          int delay = entry.getKey();
+          int newCount = entry.getValue() != null ? entry.getValue() : count;
+
+          startClick(autoClick, newCount, interval);
+          robotUtils.sleepMilis(delay);
         }
-        startClick(autoClick, count, interval);
       }
     }
   }

@@ -1,5 +1,7 @@
 package es.zed.autoclick.domain.model;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -17,7 +19,9 @@ public class AutoClick {
 
 	private Mouse mouse;
 
-	private int delay;
+  private Map<Integer, Integer> delays = new HashMap<Integer, Integer>() {{
+    put(0, null);
+  }};
 
   private SpeedMode SpeedMode;
 }
