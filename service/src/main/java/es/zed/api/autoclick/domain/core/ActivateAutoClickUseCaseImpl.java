@@ -12,11 +12,13 @@ import es.zed.autoclick.domain.model.Mode;
 import es.zed.autoclick.domain.model.SpeedMode;
 import es.zed.autoclick.domain.model.User32;
 import es.zed.shared.Constants;
+import es.zed.shared.domain.utils.BoomBangOptimizerUtils;
 import es.zed.shared.domain.utils.PreciseTimingUtils;
 import es.zed.shared.domain.utils.RobotUtils;
 import es.zed.shared.domain.utils.ScreenUtils;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +37,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
   private final RobotUtils robotUtils;
   private final ScreenUtils screenUtils;
   private final PreciseTimingUtils preciseTimingUtils;
+  private final BoomBangOptimizerUtils boomBangOptimizerUtils;
 
   private volatile boolean isActive;
   private final AtomicInteger remainingClicks;
@@ -47,10 +50,12 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
   private ExecutorService executorService;
   private Future<?> currentAutoClickTask;
 
-  public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils, PreciseTimingUtils preciseTimingUtils) {
+  public ActivateAutoClickUseCaseImpl(RobotUtils robotUtils, ScreenUtils screenUtils, PreciseTimingUtils preciseTimingUtils,
+      BoomBangOptimizerUtils boomBangOptimizerUtils) throws IOException {
     this.robotUtils = robotUtils;
     this.screenUtils = screenUtils;
     this.preciseTimingUtils = preciseTimingUtils;
+    this.boomBangOptimizerUtils = boomBangOptimizerUtils;
     this.isActive = false;
     this.savedCoordinates = null;
     this.relativeCoordinates = null;
@@ -59,7 +64,11 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
     this.remainingClicks = new AtomicInteger(0);
     this.executorService = Executors.newSingleThreadExecutor();
     this.currentAutoClickTask = null;
+
+    boomBangOptimizerUtils.optimizeBoomBangProcesses();
+    boomBangOptimizerUtils.optimizeNetworkForBoomBang();
     initializeGlobalScreenOnce();
+
   }
 
   @Override
