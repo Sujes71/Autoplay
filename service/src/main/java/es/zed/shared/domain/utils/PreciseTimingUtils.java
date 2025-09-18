@@ -27,9 +27,6 @@ public class PreciseTimingUtils {
       if (Thread.currentThread().isInterrupted()) {
         throw new InterruptedException();
       }
-      if ((System.nanoTime() - startTime) % 1000 == 0) {
-        Thread.yield();
-      }
     }
   }
 
