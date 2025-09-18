@@ -40,21 +40,4 @@ public class PreciseTimingUtils {
   public void preciseSleepMilis(long millis) throws InterruptedException {
     preciseSleep(millis * 1_000_000);
   }
-
-  public void parkSleep(long nanos) throws InterruptedException {
-    if (nanos <= 0) return;
-
-    long deadline = System.nanoTime() + nanos;
-
-    while (System.nanoTime() < deadline) {
-      long remaining = deadline - System.nanoTime();
-      if (remaining <= 0) break;
-
-      if (Thread.currentThread().isInterrupted()) {
-        throw new InterruptedException();
-      }
-
-      LockSupport.parkNanos(remaining);
-    }
-  }
 }
