@@ -31,18 +31,12 @@ public class PreciseTimingUtils {
         Thread.yield();
       }
     }
-  } // ← Esta llave faltaba
+  }
 
-  /**
-   * Versión optimizada para microsegundos
-   */
   public void preciseSleepMicros(long micros) throws InterruptedException {
     preciseSleep(micros * 1_000);
   }
 
-  /**
-   * Versión optimizada para milisegundos con sub-milisegundo precision
-   */
   public void preciseSleepMilis(long millis) throws InterruptedException {
     preciseSleep(millis * 1_000_000);
   }

@@ -8,6 +8,7 @@ import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import com.sun.jna.platform.win32.WinDef;
 import es.zed.api.autoclick.domain.port.inbound.ActivateAutoClickUseCase;
 import es.zed.autoclick.domain.model.AutoClick;
+import es.zed.autoclick.domain.model.DelayClick;
 import es.zed.autoclick.domain.model.Mode;
 import es.zed.autoclick.domain.model.SpeedMode;
 import es.zed.autoclick.domain.model.User32;
@@ -19,7 +20,6 @@ import es.zed.shared.domain.utils.ScreenUtils;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,7 +100,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
     remainingClicks.set(count);
 
-    while (remainingClicks.get() > 0 && isActive || autoClick.getMode() == Mode.AUTO && isActive) {
+    while (remainingClicks.get() > 0 && isActive) {
       if (!isActive) {
         break;
       }
@@ -151,7 +151,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
             case NativeKeyEvent.VC_F1 -> {
               isActive = true;
               if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX || autoClick.getMode() == Mode.AUTO) {
-                activateAutoClick(autoClick, autoClick.getCount(), autoClick.getInterval());
+                activateAutoClick(autoClick, autoClick.getInterval());
               }
             }
             case NativeKeyEvent.VC_F2 -> deactivateAutoClick();
@@ -176,7 +176,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
         @Override
         public void nativeMousePressed(NativeMouseEvent e) {
           try {
-            activateAutoClick(autoClick, autoClick.getMouse().getCount(), autoClick.getMouse().getInterval());
+            activateAutoClick(autoClick, autoClick.getMouse().getInterval());
           } catch (InterruptedException ex) {
             log.error("Error during mouse press handling: {}", ex.getMessage());
           }
@@ -194,7 +194,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
     relativeCoordinates = new Point(relativeCoordinatesArray[0], relativeCoordinatesArray[1]);
   }
 
-  private void activateAutoClick(final AutoClick autoClick, final int count, final long interval) throws InterruptedException {
+  private void activateAutoClick(final AutoClick autoClick, final long interval) throws InterruptedException {
     if (Objects.isNull(savedCoordinates)) {
       log.error("Coordinates are not set. Press F3 to save coordinates.");
       return;
@@ -209,9 +209,9 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       currentAutoClickTask = executorService.submit(() -> {
         try {
           if (isActive) {
-            for (Map.Entry<Integer, Integer> entry : autoClick.getDelays().entrySet()) {
-              int delay = entry.getKey();
-              int newCount = entry.getValue() != null ? entry.getValue() : count;
+            for (DelayClick delayClick : autoClick.getDelayClicks()) {
+              int delay = delayClick.getDelay();
+              int newCount = delayClick.getCount();
 
               if (delay > 0) {
                 robotUtils.sleepMilis(delay);
@@ -231,9 +231,9 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       });
     } else {
       if (isActive) {
-        for (Map.Entry<Integer, Integer> entry : autoClick.getDelays().entrySet()) {
-          int delay = entry.getKey();
-          int newCount = entry.getValue() != null ? entry.getValue() : count;
+        for (DelayClick delayClick : autoClick.getDelayClicks()) {
+          int delay = delayClick.getDelay();
+          int newCount = delayClick.getCount();
 
           if (delay > 0) {
             robotUtils.sleepMilis(delay);

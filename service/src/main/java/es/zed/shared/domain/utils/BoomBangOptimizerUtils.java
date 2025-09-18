@@ -13,7 +13,6 @@ public class BoomBangOptimizerUtils {
     try {
       log.info("Optimizing BoomBang processes...");
 
-      cleanupDuplicateProcesses();
       setBoomBangHighPriority();
       setBoomBangCpuAffinity();
 
@@ -24,52 +23,9 @@ public class BoomBangOptimizerUtils {
     }
   }
 
-  public void cleanupDuplicateProcesses() throws IOException, InterruptedException {
-    log.info("Cleaning up duplicate BoomBang processes...");
-
-    // Procesar BoomBangLauncher.exe
-    Process listProcess1 = Runtime.getRuntime().exec(
-        "wmic process where \"name='BoomBangLauncher.exe'\" get ProcessId,PageFileUsage"
-    );
-    listProcess1.waitFor();
-
-    String complexCommand1 = "for /f \"skip=1 tokens=1,2\" %i in ('wmic process where \"name='BoomBangLauncher.exe'\" get ProcessId,PageFileUsage /format:csv ^| sort /r /k 3') do @if not \"%k\"==\"\" (taskkill /f /pid %j >nul 2>&1)";
-
-    ProcessBuilder pb1 = new ProcessBuilder();
-    pb1.command("cmd.exe", "/c", complexCommand1);
-
-    Process cleanupProcess1 = pb1.start();
-    boolean finished1 = cleanupProcess1.waitFor(30, TimeUnit.SECONDS);
-
-    if (!finished1) {
-      cleanupProcess1.destroyForcibly();
-    }
-
-    // Procesar BoomBang.exe también
-    Process listProcess2 = Runtime.getRuntime().exec(
-        "wmic process where \"name='BoomBang.exe'\" get ProcessId,PageFileUsage"
-    );
-    listProcess2.waitFor();
-
-    String complexCommand2 = "for /f \"skip=1 tokens=1,2\" %i in ('wmic process where \"name='BoomBang.exe'\" get ProcessId,PageFileUsage /format:csv ^| sort /r /k 3') do @if not \"%k\"==\"\" (taskkill /f /pid %j >nul 2>&1)";
-
-    ProcessBuilder pb2 = new ProcessBuilder();
-    pb2.command("cmd.exe", "/c", complexCommand2);
-
-    Process cleanupProcess2 = pb2.start();
-    boolean finished2 = cleanupProcess2.waitFor(30, TimeUnit.SECONDS);
-
-    if (!finished2) {
-      cleanupProcess2.destroyForcibly();
-    }
-
-    log.info("Duplicate processes cleaned up for both BoomBangLauncher.exe and BoomBang.exe");
-  }
-
   private void setBoomBangHighPriority() throws IOException, InterruptedException {
     log.info("Setting BoomBang processes to high priority...");
 
-    // Usar PowerShell directo (requiere que Java se ejecute como admin)
     ProcessBuilder pb1 = new ProcessBuilder();
     pb1.command("powershell.exe", "-Command",
         "Get-Process | Where-Object {$_.ProcessName -like '*BoomBang*'} | ForEach-Object {$_.PriorityClass = 'High'}");
@@ -87,7 +43,6 @@ public class BoomBangOptimizerUtils {
   private void setBoomBangCpuAffinity() throws IOException, InterruptedException {
     log.info("Setting BoomBang CPU affinity...");
 
-    // Usar PowerShell directo para cambiar afinidad a todos los procesos BoomBang
     ProcessBuilder pb = new ProcessBuilder();
     pb.command("powershell.exe", "-Command",
         "Get-Process | Where-Object {$_.ProcessName -like '*BoomBang*'} | ForEach-Object {$_.ProcessorAffinity = 63}");
@@ -106,7 +61,6 @@ public class BoomBangOptimizerUtils {
     try {
       log.info("Optimizing network settings for BoomBang...");
 
-      // Flush DNS con timeout
       ProcessBuilder pb1 = new ProcessBuilder();
       pb1.command("cmd.exe", "/c", "ipconfig /flushdns");
       Process flushDns = pb1.start();
@@ -119,7 +73,6 @@ public class BoomBangOptimizerUtils {
         log.info("DNS cache flushed successfully");
       }
 
-      // TCP Auto-tuning con timeout
       ProcessBuilder pb2 = new ProcessBuilder();
       pb2.command("cmd.exe", "/c", "netsh int tcp set global autotuninglevel=normal");
       Process tcpOptimize = pb2.start();
@@ -132,7 +85,6 @@ public class BoomBangOptimizerUtils {
         log.info("TCP auto-tuning set to normal");
       }
 
-      // Chimney offload con timeout
       ProcessBuilder pb3 = new ProcessBuilder();
       pb3.command("cmd.exe", "/c", "netsh int tcp set global chimney=enabled");
       Process chimneyEnable = pb3.start();
@@ -145,7 +97,6 @@ public class BoomBangOptimizerUtils {
         log.info("Chimney offload enabled");
       }
 
-      // RSS (Receive Side Scaling) - mejora rendimiento en multi-core
       ProcessBuilder pb4 = new ProcessBuilder();
       pb4.command("cmd.exe", "/c", "netsh int tcp set global rss=enabled");
       Process rssEnable = pb4.start();
@@ -158,7 +109,6 @@ public class BoomBangOptimizerUtils {
         log.info("RSS (Receive Side Scaling) enabled");
       }
 
-      // NetDMA - optimiza transferencias de red
       ProcessBuilder pb5 = new ProcessBuilder();
       pb5.command("cmd.exe", "/c", "netsh int tcp set global netdma=enabled");
       Process netdmaEnable = pb5.start();
@@ -171,7 +121,6 @@ public class BoomBangOptimizerUtils {
         log.info("NetDMA enabled");
       }
 
-      // URO (UDP Receive Offload) - optimiza UDP para gaming
       ProcessBuilder pb6 = new ProcessBuilder();
       pb6.command("cmd.exe", "/c", "netsh int udp set global uro=enabled");
       Process uroEnable = pb6.start();
@@ -184,7 +133,6 @@ public class BoomBangOptimizerUtils {
         log.info("URO (UDP Receive Offload) enabled");
       }
 
-      // TCP Window Scaling - mejora throughput
       ProcessBuilder pb7 = new ProcessBuilder();
       pb7.command("cmd.exe", "/c", "netsh int tcp set global timestamps=enabled");
       Process timestampsEnable = pb7.start();
