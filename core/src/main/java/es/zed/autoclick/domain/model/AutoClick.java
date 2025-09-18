@@ -14,8 +14,6 @@ public class AutoClick {
 
 	private long interval;
 
-	private Mouse mouse;
-
   private List<DelayClick> delayClicks;
 
   private SpeedMode SpeedMode;

@@ -150,7 +150,7 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
             case NativeKeyEvent.VC_F3 -> saveMouseCoordinates();
             case NativeKeyEvent.VC_F1 -> {
               isActive = true;
-              if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.MIX || autoClick.getMode() == Mode.AUTO) {
+              if (autoClick.getMode() == Mode.KEY || autoClick.getMode() == Mode.AUTO) {
                 activateAutoClick(autoClick, autoClick.getInterval());
               }
             }
@@ -171,12 +171,12 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       log.info("Removing existing NativeMouseListener.");
       GlobalScreen.removeNativeMouseListener(currentMouseListener);
     }
-    if (autoClick.getMode() == Mode.MOUSE || autoClick.getMode() == Mode.MIX) {
+    if (autoClick.getMode() == Mode.MOUSE) {
       currentMouseListener = new NativeMouseInputListener() {
         @Override
         public void nativeMousePressed(NativeMouseEvent e) {
           try {
-            activateAutoClick(autoClick, autoClick.getMouse().getInterval());
+            activateAutoClick(autoClick, autoClick.getInterval());
           } catch (InterruptedException ex) {
             log.error("Error during mouse press handling: {}", ex.getMessage());
           }
@@ -208,8 +208,12 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
 
       currentAutoClickTask = executorService.submit(() -> {
         try {
-          if (isActive) {
+          while (isActive) {
             for (DelayClick delayClick : autoClick.getDelayClicks()) {
+              if (!isActive) {
+                break;
+              }
+
               int delay = delayClick.getDelay();
               int newCount = delayClick.getCount();
 
