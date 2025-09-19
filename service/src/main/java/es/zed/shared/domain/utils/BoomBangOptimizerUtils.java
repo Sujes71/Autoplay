@@ -73,18 +73,6 @@ public class BoomBangOptimizerUtils {
         log.info("DNS cache flushed successfully");
       }
 
-      ProcessBuilder pb2 = new ProcessBuilder();
-      pb2.command("cmd.exe", "/c", "netsh int tcp set global autotuninglevel=normal");
-      Process tcpOptimize = pb2.start();
-      boolean finished2 = tcpOptimize.waitFor(15, TimeUnit.SECONDS);
-
-      if (!finished2) {
-        log.warn("TCP optimize timeout, terminating process");
-        tcpOptimize.destroyForcibly();
-      } else {
-        log.info("TCP auto-tuning set to normal");
-      }
-
       ProcessBuilder pb3 = new ProcessBuilder();
       pb3.command("cmd.exe", "/c", "netsh int tcp set global chimney=enabled");
       Process chimneyEnable = pb3.start();

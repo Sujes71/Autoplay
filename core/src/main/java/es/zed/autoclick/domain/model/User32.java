@@ -16,6 +16,9 @@ public interface User32 extends StdCallLibrary {
   WinDef.HWND GetForegroundWindow();
   boolean GetWindowRect(WinDef.HWND hWnd, RECT rect);
 
+  boolean GetClientRect(WinDef.HWND hWnd, RECT lpRect);
+  boolean ScreenToClient(WinDef.HWND hWnd, POINT lpPoint);
+
   class POINT extends Structure {
     public int x;
     public int y;

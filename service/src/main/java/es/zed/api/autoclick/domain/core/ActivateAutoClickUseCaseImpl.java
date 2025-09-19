@@ -276,21 +276,36 @@ public class ActivateAutoClickUseCaseImpl implements ActivateAutoClickUseCase {
       return new int[]{0, 0};
     }
 
+    User32.RECT clientRect = new User32.RECT();
+    if (!user32.GetClientRect(foregroundWindow, clientRect)) {
+      log.error("Failed to get client rect.");
+      return new int[]{0, 0};
+    }
+
     User32.POINT cursorPos = new User32.POINT();
     if (!user32.GetCursorPos(cursorPos)) {
       log.error("Failed to get cursor position.");
       return new int[]{0, 0};
     }
 
-    int relativeX = cursorPos.x - windowRect.left;
-    int relativeY = cursorPos.y - windowRect.top - 40;
+    User32.POINT clientPoint = new User32.POINT();
+    clientPoint.x = cursorPos.x;
+    clientPoint.y = cursorPos.y;
 
-    if (relativeX < 0 || relativeY < 0 || relativeX > (windowRect.right - windowRect.left) || relativeY > (windowRect.bottom - windowRect.top)) {
-      log.error("Cursor is outside the window's bounds.");
+    if (!user32.ScreenToClient(foregroundWindow, clientPoint)) {
+      log.error("Failed to convert screen coordinates to client coordinates.");
       return new int[]{0, 0};
     }
 
-    log.info("Relative Coordinates in Foreground Window: X={}, Y={}", relativeX, relativeY);
+    int relativeX = clientPoint.x;
+    int relativeY = clientPoint.y;
+
+    if (relativeX < 0 || relativeY < 0 ||
+        relativeX > clientRect.right || relativeY > clientRect.bottom) {
+      log.warn("Cursor is outside the window's client area. X={}, Y={}", relativeX, relativeY);
+    }
+
+    log.info("Precise Relative Coordinates in Client Area: X={}, Y={}", relativeX, relativeY);
     return new int[]{relativeX, relativeY};
   }
 }
